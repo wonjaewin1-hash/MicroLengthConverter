@@ -1,0 +1,702 @@
+name: Build UnitConv
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - name: Write source files
+        run: |
+          mkdir -p app/Resources
+          cat > 'app/AppDelegate.h' <<'__EOF__'
+          #import <UIKit/UIKit.h>
+
+          @interface AppDelegate : UIResponder <UIApplicationDelegate>
+          @property (nonatomic, strong) UIWindow *window;
+          @end
+          __EOF__
+          cat > 'app/AppDelegate.m' <<'__EOF__'
+          #import "AppDelegate.h"
+          #import "UnitViewController.h"
+
+          @implementation AppDelegate
+
+          - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+              self.window = [[UIWindow alloc] initWithFrame:UIScreen.mainScreen.bounds];
+              self.window.overrideUserInterfaceStyle = UIUserInterfaceStyleDark;
+              self.window.rootViewController = [[UnitViewController alloc] init];
+              [self.window makeKeyAndVisible];
+              return YES;
+          }
+
+          @end
+          __EOF__
+          cat > 'app/Makefile' <<'__EOF__'
+          TARGET := iphone:clang:latest:14.0
+          ARCHS = arm64
+          INSTALL_TARGET_PROCESSES = UnitConv
+
+          include $(THEOS)/makefiles/common.mk
+
+          APPLICATION_NAME = UnitConv
+
+          UnitConv_FILES = main.m AppDelegate.m UnitViewController.m
+          UnitConv_FRAMEWORKS = UIKit
+          UnitConv_CFLAGS = -fobjc-arc -Wno-deprecated-declarations -Wno-error
+
+          include $(THEOS_MAKE_PATH)/application.mk
+          __EOF__
+          cat > /tmp/b64 <<'__EOF__'
+          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
+          __EOF__
+          base64 --decode -i /tmp/b64 -o 'app/Resources/AppIcon60x60@2x.png'
+          cat > /tmp/b64 <<'__EOF__'
+          iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAAUXElEQVR4Xu2de5DVxZXHT3f/fvfe
+          efIYBgg4PAYHGByCvAYGTIxhNcZCI0EUwbFiamtra1PZ/WO3dlMx2c2u65rdqqRS2bi1laQSd1Ob
+          iErU1UTdTTRaogsKooiIRFSCKPJweAz39evurdNn3jJz+47cmfvr6U9NoQz3d3+P/v5Od58+5zSA
+          x+PxeDwej8fj8Xg8Ho/H4/F4PB6Px+PxeDwej8fj8Xg8Ho/H4/F4PB6Px+PxeDwej8fj8Xg8Ho/H
+          4/F4PB6PZwRgI3COcoYx4Az/1Lr3MumvSvf7pWcMwRgIXuB+BUfpjFnG6K0LDlJho9ekoK1JtDby
+          pimsvopxDh1peOu43vm2fO4NdaQD7YngoBT0sSxjhTEnDgZoM5SGhonsq1eFG1eKhskMAoaNT+2P
+          nwBQcKpD//fu6HuPR7veRh1xc9SYYmyJg5nb1Rr+9IrgH28M6+o4ZLTKm1ZnXc8CBaBNpxMApFiU
+          0d97LLr9/lxOjjl9jCFxkDI4gx/elvjy1SGc01Eeuwz6/UfRGrseIYDVsGd3yxu+nz16Wo8p+zFW
+          xEGzEq3hvq8k118R5D/UweCy6IsGiCIIx7G9b6o1d2XGlD4KjdddgTM0A/96S4KUEYqBBkMZOxEp
+          /LPv0IIBhAHkT+lLGvlDf5FMhnjgYMbGMcaEOGhusmG5+LNrQ1JGX3AmooEnQVSzoJqJCmx7msv0
+          gPo4rVcuEt9en5BqrMxv3e9W6C2vSbHX7kxNq2c6369pcVRRgXOTfe+o/e/rXASzJrEls3hQzdRZ
+          zfu8OxrQuvAQln0js+sd1TMZdpjA4XsjBMPO4kuXiekNPDqlgz5mA5VRxXa8Lr92X+6Z11WPtWie
+          xm+/Ltj8mUCd61USA9AKWIJ9fW14w91Z558bTeodB4cIADu/lVrUxFW61yuqFPAq9vDz0U13Z7OR
+          kZGxEz1e86+tDe/aHMo0yovAsQiDbB6a/iZ9+KT7MxfHxxw0Q2mawhfO4CzbRxkaWBL2vy1v/jdU
+          BpkTSaNRjUeFAr79aP6e30SiivVYFPSNSUjVsjXNeIDznnX3xQEAl85koqK3jckPxgL29w/m03lU
+          RiT7D1E1SCORr2/Nn+3QPOhdgSPj0dro+HMjXL9J0yPMqefA+zSwRu/nqZPqf/eqj05MCGVmK+91
+          6G37JUuyHsc5fp+Cxnr8r/POdNfFYRhf2W9whY0awJEOfaJT40r9II1MS/kHPtAorL6WRevaCiMS
+          19UxJsRx3kak9bWC2HzGVcaEODo6+5kHbO8Ipk9gddUMvSCDtD9NW+ZOZaD6f4SxMxnUmx+Qxhxj
+          NA4eU9jA3SLAcUYENRP55xcKrSE43wtCDX/RBLZqntCZXm+YEQUcPkkDU8dx3HLQsOClQyo6p/vG
+          fWEgYF7/3bqwJsXyEicsfVsaA8A4HnvXDWFVLVOyz792fyF+r+vqcF8cnMGBo/rld5RO9q6YoP8j
+          C40N/IGvJquTOJXVppsgAeEKnIRvXhfe8tlQdvZTlRAgO/VvX8O5L81oHMZxcdDIQGv44dMRS5hw
+          r244x2a+aqnY9reptZeKVNi1MIt+kRl8y1eS/7AplGnd4x5F0UhgVeypvfL199x3j44By0i2n0Eq
+          hO3fSC1s5CrXbyCJTvQUfuCtd/WBoyoXwYyJbGEDZxVMdQ5ceNMM0hLW3JnZftAvvDmBBhxypnNw
+          /4tyYbNQGc37rL3h2MIsos3+BJvdYJYhpYYcGpUBsemKVul2RtsPKooOcR73uxUaQ3AO1y8WkMfu
+          YADcBIkpIwjZqVUW9fTRrAVcvs/o1ov5jDp0mDo/jx0D7nPTzFrDspl8SRPXGdPG54NGo5Soct5Z
+          CDPxglUT+fplY2LVbUyIg1p686oAEv3W3oYBekryevPKAD0lrvvO3RcHM5E+lUlYv1RAtt8Acxig
+          EcrCkjl8yUyOq3eu98mO358wfcRVl4jp07jsP08ZHjibTbHNbTh0dd0H5ro4aM21fVWg+/k4hg8O
+          WbL6hqWiIoE2yW19uGw5KFZj2nj2uYWCZQZOTYcHzWsapvM/WoDuscGGt27gsjhoTPDFpaJqAovy
+          F+wtVwCaw62rAueHpC6Lg9Y+bmkLILqQaUiYQZnRVy/kU8fh9Mdhh4ez4qCk1kUNfHkT19kL06cQ
+          DEDmobqOr1vquMPDZXEAwKY2wSuZ7B8/fAFAgWi0Scbb7ipuigO9mQqSIWxYFnx898ZHQYdHBlY0
+          8ZaL0OHh6rDUTXHgsADgivlidgNX2ZIMC6QEUck2rTQ9i6Omw837IvfGrauE5ji5KAVoLXL6xuVB
+          IsAJs5MODwfFQe6N+hp2zSLj3rBuN5SU9QACB7xZmNPAL59njIeDD9JFcZB74wuLxbg6HtlNYjHU
+          NAk731L/sS3SlbbrcxieHsCtq4W1omKGg4Lvcm+sCgamFAwOHpJgD++W330iYqYgmA3k8Fi7SNRV
+          o54sj4oRromD3BvzP8FXz+Pa2mWOxiatn9gj9xxWhw4rnrDKZsP+KwfjJ/HrFmPPYt9/xQUHxQEA
+          N68QQbWte4My7ve+o3YfwsHrg7skJJhtZDlW7YD2NhSHe9mRTokDXVMKqydsbBWQs43eQB2EbOtO
+          mTe+svtfiOyP5ejw0JfNF3OncvdiB50SBzYVwOomMXdmEe4NIUCl9dYXURqcwY6D6o0/KJ60sgQo
+          RwlhNdu4wsE5i1PiINpXCQh7iyYMDQ4kk/DSQbXnMJZjEBzy0vQsoW3Pggtveb2xVQQcheIS7oiD
+          3BvjK9kXFguwdm+gYyNgD7woKeyPxg34V+u1OnJ4NM/iqy7m5w1bjy/uiINc5jixnMxl3mpiiW0Z
+          QNSpH9zZld5IM9KX3lF731bMrmfpyosM2S2rXau+5444aGOD9lWYOG+Jwj6F7Tig9r+PeUpkNqiG
+          5C93FjFnwZlwRl+/WIwzxaWccXg4Ig5q2sZ6dvmCIiICzX4ZcP+LWEuwx/9NEtn6olTntOhfznYw
+          sEfLQ/0Ujg57hxwerojD3MdNrUGyhkWmbmRBcLAhIHtaP7SrX8o8mhMGe95VLx3EnsU+7VFrs9Tn
+          kMPDEXFguVmOvi/Ia2Z3T+jeSLJt++XbxwemzFOS3NadEgJm2UlRsuRnFohZk9xJlrR7kOUNtWXr
+          bI5J9FlbNza2uoD7XjDujf6Pgdyjv9wpo07rnsU4PFK17MblOCx1Y5HWBXHQMhmutCVs3RtY7SmE
+          zg/1I7vPU4aFfJ3731Mv/F6xlG3Pgg6PSG9aKZzJwY+9OCgisDrFvmgSHi1Xv8waPfvdPnmk4/xl
+          WOjVx7GqsO5ZGKgMLGrky2Y7kiwZe3GQe+PqFj51KiY8FjGNZNinDJaYRD3Lw7tk7owWgW09WhrH
+          oA1zIlky9uLoTXi0Hhh1VTA+oR57BUPHzzsfoZ7l4DH93BumgrFdsCElS65fIqqSJlnSLi6kbIm3
+          OKh3b5jIrmxB94blMFBq0Cn2m73q2BnMZxlsPkLfhiNWYVvKGq8nB9Om8ataXHB4xFwc5vLXLxMV
+          49G9YfmiYl1aDVt2REMXMSZr8chume4oomdBS8a6kiXtzE35Em9xkK9688oAIm1pw7FPCeHEMayK
+          j33K4L0R9SyHT+pnXpeQsu1ZKHbwyhYxfQIeEutkyRiLg3qExTP40ouxnpNlKRXsU5LssT2yw5St
+          HdrHxc1oF3sWbtuz4OwpD1UTGJaLibnDI8bi6Krn1BawlG28OCUgMQX37cB5SsFuiBbzfvWyPHtS
+          idB2zoI2LAK8sJgXso2rOMi9UZGADcuKiAjE1MUEvPe+enKf6VMKDQqUCfI4elo/+ZrS1nMWUx1K
+          L7uYL5oR79jBuIqDDP6aZtEwnUvrhEfqUx59WXZmcdNhm9kvGRi0NAXtTB+kBF7BNq00rvRiDiwr
+          4ioO2iipfXWg7dqYwDKSUdd6io0yKIleAzz+quw4bnoWu8O6kyWxanZ8q0PFUhwUETilln1+IbdP
+          eMTZRwIOv6ee/70kvyoVHh36hzNIBHCyUz+5T0GKWRZcoNjBmRfxK5qNwyOWjzme4qBnvW6pqKnj
+          WM/Jzm5TWtt/Phd1Znt3JqcdIYf+yUVoMP79qQj67q1RiL7VoezMTdkRy7BHck+1twXYWnbK6No2
+          NqOvvES0TOe430qRLZZKgE4XUSEIq1xm9DWf5PU17NgZdMMUe8ZRJ37ioIjAlul8xdwiEh5xJczM
+          MJfP59hu2mIiOwCNKZP2DYb1cSOoncSvXyJ+9HQk+MANSsufuIrj5pVCVLLodL/txwtjVtXNlpDD
+          odihAxo1qdvbgh89HVku3ZUV8ROHVDhCvGl5YJ+02BecWFr3RB8Tqg7VNo83T+P7jvQGuMeFmA2j
+          8XEDfHqemDNj4LY65YmUEFQzDG6NocMjZuIgbl0lQFjlso465PDY2CpCEb/qUHESB7k36qrY2kuL
+          iAgcXSh2sGkm/9RczFqwjDgpE+IkDhoPXrtYTJhkm/BYDuAqTsAwvTtuxEkc3e4NES+nEiVLXnup
+          mFAVs2TJ2IiD3BtNU9inmoVO20YElgOULFk3ma+NW7JkfMRhrnTjiiA09ZxGajZ64dAmyTtWyZKx
+          8XNIhTuA3txqdngsRtJKl2ReU9RymnF46MubxZzJ7M0PYrNhcTzEQWUR2pp48+wi6jkhGngIPFEC
+          QyM1ZIrwp8kIErXsptbgnx7N95R7KHPiIY7ehMeQqXS/XYOHAL3kIRw6qre/iaE6w3WaD4S+akYd
+          WzmPa+s1YUzvzuubV4h//nXect1/1ImBOGiHx9oKWEf1nKz7FOyJkuxbD+XuedauKkMxTBvPDn6n
+          IiFQKDZ2SZgIj5bZfMUc/tyBeOx2bv2kRw/a4fGaT4r6qUW4NyhV+swJ9dgeDO0JReG4noKBPz0f
+          CAUc6dDbXpfMOmWhq1BpgtEuLTZ6GnViIA6MmqEdHk3EniU9aW1HT+FBeVk4qKdg1E/PB+gytlDK
+          gjUYE5bV65aImlQ8kiWLubnRAMduCmbWsc9eUkQ9J3o1mYZ7txdIaxse5I57dLfs/LCIZDgqhz11
+          Kr96YTySJcteHOYCN7QGqdoiEh4pre34B+qJVwuktQ0PSlk40qGfek3apywQZiMY3FnyQg2QS0e5
+          i4O2X9y8QmDCo/XFUp/y61fkKRPYV4pmoLCQLUWmLGBGRUavaRENEzFWucyzFqyf92hA7bpsNl80
+          h6uMbT2nrrQ2Cfdux7S2EkEpC5hWWUzKAkYqRlAxjm1YHoMIj7IWR2/Co3W2GU0KeAL+cET9bj86
+          FEoUn0cVj0+c1f/zKibD2bsuTCir3rwywCGI/QB7NChfcVDCY1UCMCPZuth0Vz3hJHv4JZnOoce9
+          dM+fepZ7d5j9e6wbj2IHF8/hS2aWe3Wo8hUH5R1hLYNpxdVzouCrLTvQ8VU6ZfQkw/12r/rgqBKJ
+          IkY2WDkixTabXVrsVTXylK84qJ7TphVBpNGEWP5gAlIA+w+p7W+qUie5U89yOqN/9YqUIctGthep
+          AaK0XrcYd5Ys52TJMnWfUz2nxnq2YTWGiwa11i+YBKhlDz2Sz0ssUByVfo8LnLNsl7etDUWtceVa
+          omDWfHbDsuDn/xdxs6xYhpSpOHDUhotbfOsuKdNFhF7iSkcA9zx7nuqipYAKeDzzhvzJI/naKqat
+          M/Bwil4B4ytLcVEeT+mxt4OjAGPDdBPhjq8lHYt+BPu14r7o0gQieTwej8fj8Xg8TjBysxVcieg+
+          Wxnu7M26PVjlGWnRs7hfVDicx1MqRsJyGG8n1KTgojpcJM3k9VvHRtYLMSR0eVPHsQnV+DQ+PKvf
+          P6Xpl+XD7HqWCtG4HT6hzmS6rtkFgu7if/oXlfpnlXvuSJXVXQUm/f0H7Ql9b5W+t+oH7QkwG0eW
+          FXvuSOmfVepfVK4zJdXpkZaaETlJf8rqjYwLo/LQRkEcnrjgxeEZFC8Oz6CUaTwHbWOjFPz4tkRb
+          MwfO7tya+/nzUgiszzcYlL0+dyp/8M9xUHn6HFz9neyp9IWvHky51OMq2ON/maw1MRnrvp974/0C
+          xSTp4je1idvXJ0Dp5/epP/5pjm6zPClfcRBzp7AFs7Hm8GQTDGYz865MwIJZGICaOYv7ZpSOgMOl
+          M1mqGushV6IaC0AXP7mWLWjkIPWJk6MyyiyCchdHOo/J6SAgb50oj9VasqijzmxpB/ka8BSJEF0i
+          9j7ffGQuT+KtlTmjIA5m50VAe8swiIZqDguOvoeh3Q/UrfQcwhm+3IHo6gUGg76zxz+NRxU6EXUr
+          gbk2OpAub+iqLHSiAXdEt1kQi49ceEZBHBhHbhP3az6TI4PB4GwWj7I58GRnl7nWGo6dKRwRRt95
+          LtfVaZ3L2Z4Iv7y7ZzjZqQteG33grLFqdGv4G5tHYVJ4Rp6RE4c2GQYsgoY6drfxQg4NvZ0LL+IQ
+          YRbbl1YHS2fyoV9NOmSSGQQAQFWS/fjLiYwpvjOERug7Pz2PQw4P+1wLr2hP2JwoFeIpKIfiXzYk
+          jp8tMPKl78Q7ymlQ+D93tycsSw41TGQqAlWavN/BGAlzFXCUxY2tYss3K+C4wnNWWp83o/Hd0gBJ
+          gNDuKNW99wUDqLBOF8hpyJmnlMA9ewpJ10CbbJDxqGC2boG8BjIeAiBldyLAE2Foez2/6Y70fTsk
+          PdJSY31xH4OeIlqr54u/vipoaeT5c7bZBpT3RhmwloO+vnX+7J9gz+jB/kR91zikyVGwoedENttT
+          dolQQ5CA4x36rx7IP/2afPckpl8OYQsvFCPRrdBtHDqhD22L/uQyEdTygGvb96yb4S2EDeOoYRyC
+          w8xhNYjt0zeGk53S/2WKm+GKsaUSPx4jYTkIemOWzOJ1tSb55+Nd95gCt5XikM7CtgMyUiOkDI9n
+          KEb6BcadXUf6nO5Qnim1Ho/H4/F4PB6Px+PxeDwej8fj8Xg8Ho/H4/F4PB6Px+PxeDwej8fj8Xg8
+          Hk9R/D9WX4ot4D9QRAAAAABJRU5ErkJggg==
+          __EOF__
+          base64 --decode -i /tmp/b64 -o 'app/Resources/AppIcon60x60@3x.png'
+          cat > 'app/Resources/Info.plist' <<'__EOF__'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+          	<key>CFBundleDevelopmentRegion</key>
+          	<string>ko</string>
+          	<key>CFBundleExecutable</key>
+          	<string>UnitConv</string>
+          	<key>CFBundleIdentifier</key>
+          	<string>com.local.unitconv</string>
+          	<key>CFBundleInfoDictionaryVersion</key>
+          	<string>6.0</string>
+          	<key>CFBundleName</key>
+          	<string>UnitConv</string>
+          	<key>CFBundleDisplayName</key>
+          	<string>단위 변환기</string>
+          	<key>CFBundlePackageType</key>
+          	<string>APPL</string>
+          	<key>CFBundleShortVersionString</key>
+          	<string>1.0.0</string>
+          	<key>CFBundleVersion</key>
+          	<string>1</string>
+          	<key>CFBundleSupportedPlatforms</key>
+          	<array>
+          		<string>iPhoneOS</string>
+          	</array>
+          	<key>MinimumOSVersion</key>
+          	<string>14.0</string>
+          	<key>UIDeviceFamily</key>
+          	<array>
+          		<integer>1</integer>
+          	</array>
+          	<key>UIRequiredDeviceCapabilities</key>
+          	<array>
+          		<string>arm64</string>
+          	</array>
+          	<key>CFBundleIcons</key>
+          	<dict>
+          		<key>CFBundlePrimaryIcon</key>
+          		<dict>
+          			<key>CFBundleIconFiles</key>
+          			<array>
+          				<string>AppIcon60x60</string>
+          			</array>
+          		</dict>
+          	</dict>
+          	<key>UILaunchScreen</key>
+          	<dict/>
+          	<key>UISupportedInterfaceOrientations</key>
+          	<array>
+          		<string>UIInterfaceOrientationPortrait</string>
+          	</array>
+          	<key>UIUserInterfaceStyle</key>
+          	<string>Dark</string>
+          	<key>UIStatusBarStyle</key>
+          	<string>UIStatusBarStyleLightContent</string>
+          </dict>
+          </plist>
+          __EOF__
+          cat > 'app/UnitViewController.h' <<'__EOF__'
+          #import <UIKit/UIKit.h>
+
+          @interface UnitViewController : UIViewController
+          @end
+          __EOF__
+          cat > 'app/UnitViewController.m' <<'__EOF__'
+          #import "UnitViewController.h"
+
+          #define UC_ORANGE [UIColor colorWithRed:1.0 green:0.62 blue:0.04 alpha:1.0]
+          #define UC_DARK   [UIColor colorWithWhite:0.20 alpha:1.0]
+          #define UC_LIGHT  [UIColor colorWithWhite:0.65 alpha:1.0]
+          #define UC_BOX    [UIColor colorWithWhite:0.11 alpha:1.0]
+
+          static const NSUInteger kMaxLength = 15;
+
+          @interface UnitViewController ()
+          @property (nonatomic, strong) NSArray<NSString *> *unitNames;   // 화면에 보이는 이름
+          @property (nonatomic, strong) NSArray<NSNumber *> *unitFactors; // 1 단위 = 몇 Å
+          @property (nonatomic, assign) NSInteger active;                 // 입력 중인 단위
+          @property (nonatomic, strong) NSMutableString *input;           // 입력 중인 숫자
+          @property (nonatomic, assign) BOOL fresh;                       // 단위를 바꾼 직후 (다음 숫자가 새로 입력)
+          @property (nonatomic, assign) double heldA;                     // 단위를 바꿀 때 이어받은 값 (Å)
+          @property (nonatomic, assign) BOOL hasHeld;
+          @property (nonatomic, strong) NSArray<UIView *> *rows;
+          @property (nonatomic, strong) NSArray<UILabel *> *valueLabels;
+          @property (nonatomic, strong) UILabel *toast;
+          @property (nonatomic, strong) UIImpactFeedbackGenerator *haptic;
+          @end
+
+          @implementation UnitViewController
+
+          - (UIStatusBarStyle)preferredStatusBarStyle { return UIStatusBarStyleLightContent; }
+
+          - (void)viewDidLoad {
+              [super viewDidLoad];
+              self.view.backgroundColor = UIColor.blackColor;
+              self.haptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+
+              // 기준은 Å. 자주 쓰는 순서대로 배열
+              self.unitNames   = @[@"Å",  @"μm", @"nm", @"pm",  @"mm", @"cm", @"inch",   @"m"];
+              self.unitFactors = @[@1.0,  @1e4,  @10.0, @0.01,  @1e7,  @1e8,  @2.54e8,   @1e10];
+              self.active = 0;
+              self.input = [NSMutableString string];
+
+              UIView *display = [self buildDisplay];
+              UIView *keypad = [self buildKeypad];
+              [self.view addSubview:display];
+              [self.view addSubview:keypad];
+
+              self.toast = [[UILabel alloc] init];
+              self.toast.translatesAutoresizingMaskIntoConstraints = NO;
+              self.toast.backgroundColor = [UIColor colorWithWhite:0.25 alpha:0.95];
+              self.toast.textColor = UIColor.whiteColor;
+              self.toast.font = [UIFont systemFontOfSize:15 weight:UIFontWeightMedium];
+              self.toast.textAlignment = NSTextAlignmentCenter;
+              self.toast.layer.cornerRadius = 14;
+              self.toast.clipsToBounds = YES;
+              self.toast.alpha = 0;
+              [self.view addSubview:self.toast];
+
+              UILayoutGuide *safe = self.view.safeAreaLayoutGuide;
+              [NSLayoutConstraint activateConstraints:@[
+                  [keypad.leadingAnchor constraintEqualToAnchor:safe.leadingAnchor constant:16],
+                  [keypad.trailingAnchor constraintEqualToAnchor:safe.trailingAnchor constant:-16],
+                  [keypad.bottomAnchor constraintEqualToAnchor:safe.bottomAnchor constant:-8],
+                  [keypad.heightAnchor constraintEqualToAnchor:keypad.widthAnchor multiplier:0.78],
+
+                  [display.leadingAnchor constraintEqualToAnchor:safe.leadingAnchor constant:16],
+                  [display.trailingAnchor constraintEqualToAnchor:safe.trailingAnchor constant:-16],
+                  [display.topAnchor constraintEqualToAnchor:safe.topAnchor constant:8],
+                  [display.bottomAnchor constraintEqualToAnchor:keypad.topAnchor constant:-14],
+
+                  [self.toast.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
+                  [self.toast.bottomAnchor constraintEqualToAnchor:keypad.topAnchor constant:-20],
+                  [self.toast.heightAnchor constraintEqualToConstant:36],
+                  [self.toast.widthAnchor constraintGreaterThanOrEqualToConstant:160],
+              ]];
+              [self refresh];
+          }
+
+          #pragma mark - 화면 구성
+
+          - (UIView *)buildDisplay {
+              NSMutableArray *rows = [NSMutableArray array];
+              NSMutableArray *values = [NSMutableArray array];
+              for (NSUInteger i = 0; i < self.unitNames.count; i++) {
+                  UIView *row = [[UIView alloc] init];
+                  row.backgroundColor = UC_BOX;
+                  row.layer.cornerRadius = 12;
+                  row.layer.borderWidth = 2;
+                  row.tag = (NSInteger)i;
+                  [row addGestureRecognizer:[[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(rowTapped:)]];
+                  [row addGestureRecognizer:[[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(rowLongPressed:)]];
+
+                  UILabel *unit = [[UILabel alloc] init];
+                  unit.translatesAutoresizingMaskIntoConstraints = NO;
+                  unit.text = self.unitNames[i];
+                  unit.font = [UIFont systemFontOfSize:19 weight:UIFontWeightSemibold];
+                  unit.textColor = UC_LIGHT;
+                  [row addSubview:unit];
+
+                  UILabel *val = [[UILabel alloc] init];
+                  val.translatesAutoresizingMaskIntoConstraints = NO;
+                  val.font = [UIFont monospacedDigitSystemFontOfSize:28 weight:UIFontWeightLight];
+                  val.textAlignment = NSTextAlignmentRight;
+                  val.adjustsFontSizeToFitWidth = YES;
+                  val.minimumScaleFactor = 0.45;
+                  [row addSubview:val];
+
+                  [NSLayoutConstraint activateConstraints:@[
+                      [unit.leadingAnchor constraintEqualToAnchor:row.leadingAnchor constant:16],
+                      [unit.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
+                      [unit.widthAnchor constraintEqualToConstant:56],
+                      [val.leadingAnchor constraintEqualToAnchor:unit.trailingAnchor constant:8],
+                      [val.trailingAnchor constraintEqualToAnchor:row.trailingAnchor constant:-16],
+                      [val.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
+                  ]];
+                  [rows addObject:row];
+                  [values addObject:val];
+              }
+              self.rows = rows;
+              self.valueLabels = values;
+
+              UIStackView *stack = [[UIStackView alloc] initWithArrangedSubviews:rows];
+              stack.axis = UILayoutConstraintAxisVertical;
+              stack.spacing = 6;
+              stack.distribution = UIStackViewDistributionFillEqually;
+              stack.translatesAutoresizingMaskIntoConstraints = NO;
+              return stack;
+          }
+
+          - (UIButton *)keyWithTitle:(NSString *)title bg:(UIColor *)bg fg:(UIColor *)fg action:(SEL)action {
+              UIButton *b = [UIButton buttonWithType:UIButtonTypeSystem];
+              [b setTitle:title forState:UIControlStateNormal];
+              [b setTitleColor:fg forState:UIControlStateNormal];
+              b.tintColor = fg;
+              b.backgroundColor = bg;
+              b.titleLabel.font = [UIFont systemFontOfSize:30 weight:UIFontWeightMedium];
+              b.layer.cornerRadius = 20;
+              [b addTarget:self action:action forControlEvents:UIControlEventTouchUpInside];
+              return b;
+          }
+
+          - (UIStackView *)rowWith:(NSArray<UIView *> *)views {
+              UIStackView *row = [[UIStackView alloc] initWithArrangedSubviews:views];
+              row.spacing = 12;
+              row.distribution = UIStackViewDistributionFillEqually;
+              return row;
+          }
+
+          - (UIView *)buildKeypad {
+              // 숫자 (왼쪽 3칸)
+              NSMutableArray *digitRows = [NSMutableArray array];
+              UIButton *seven = nil;
+              for (NSArray *r in @[@[@"7", @"8", @"9"], @[@"4", @"5", @"6"], @[@"1", @"2", @"3"]]) {
+                  NSMutableArray *btns = [NSMutableArray array];
+                  for (NSString *d in r) {
+                      UIButton *b = [self keyWithTitle:d bg:UC_DARK fg:UIColor.whiteColor action:@selector(digitTapped:)];
+                      if ([d isEqualToString:@"7"]) seven = b;
+                      [btns addObject:b];
+                  }
+                  [digitRows addObject:[self rowWith:btns]];
+              }
+              UIButton *zero = [self keyWithTitle:@"0" bg:UC_DARK fg:UIColor.whiteColor action:@selector(digitTapped:)];
+              UIButton *dot = [self keyWithTitle:@"." bg:UC_DARK fg:UIColor.whiteColor action:@selector(digitTapped:)];
+              UIStackView *last = [[UIStackView alloc] initWithArrangedSubviews:@[zero, dot]];
+              last.spacing = 12;
+              [digitRows addObject:last];
+              UIStackView *digits = [[UIStackView alloc] initWithArrangedSubviews:digitRows];
+              digits.axis = UILayoutConstraintAxisVertical;
+              digits.spacing = 12;
+              digits.distribution = UIStackViewDistributionFillEqually;
+
+              // 오른쪽 열: ⌫ / AC / 복사(2칸)
+              UIButton *back = [self keyWithTitle:nil bg:UC_LIGHT fg:UIColor.blackColor action:@selector(backTapped)];
+              [back setImage:[UIImage systemImageNamed:@"delete.left"
+                                     withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:22 weight:UIImageSymbolWeightMedium]]
+                    forState:UIControlStateNormal];
+              UIButton *clear = [self keyWithTitle:@"AC" bg:UC_LIGHT fg:UIColor.blackColor action:@selector(clearTapped)];
+              clear.titleLabel.font = [UIFont systemFontOfSize:26 weight:UIFontWeightMedium];
+              UIButton *copy = [self keyWithTitle:@"복사" bg:UC_ORANGE fg:UIColor.whiteColor action:@selector(copyTapped)];
+              copy.titleLabel.font = [UIFont systemFontOfSize:22 weight:UIFontWeightSemibold];
+              UIStackView *right = [[UIStackView alloc] initWithArrangedSubviews:@[back, clear, copy]];
+              right.axis = UILayoutConstraintAxisVertical;
+              right.spacing = 12;
+
+              UIStackView *pad = [[UIStackView alloc] initWithArrangedSubviews:@[digits, right]];
+              pad.spacing = 12;
+              pad.translatesAutoresizingMaskIntoConstraints = NO;
+
+              [NSLayoutConstraint activateConstraints:@[
+                  [dot.widthAnchor constraintEqualToAnchor:seven.widthAnchor],
+                  [right.widthAnchor constraintEqualToAnchor:seven.widthAnchor],
+                  [back.heightAnchor constraintEqualToAnchor:last.heightAnchor],
+                  [clear.heightAnchor constraintEqualToAnchor:last.heightAnchor],
+              ]];
+              return pad;
+          }
+
+          #pragma mark - 숫자 표시
+
+          - (NSString *)superscript:(NSInteger)n {
+              NSString *digits = @"⁰¹²³⁴⁵⁶⁷⁸⁹";
+              NSString *s = [NSString stringWithFormat:@"%ld", (long)labs(n)];
+              NSMutableString *out = [NSMutableString stringWithString:(n < 0 ? @"⁻" : @"")];
+              for (NSUInteger i = 0; i < s.length; i++) {
+                  NSUInteger d = (NSUInteger)([s characterAtIndex:i] - '0');
+                  [out appendString:[digits substringWithRange:NSMakeRange(d, 1)]];
+              }
+              return out;
+          }
+
+          // 보기 좋은 숫자: 너무 크거나 작으면 1.5×10⁻⁶ 처럼
+          - (NSString *)pretty:(double)v {
+              if (v == 0) return @"0";
+              double a = fabs(v);
+              if (a >= 1e-4 && a < 1e12) {
+                  NSNumberFormatter *f = [[NSNumberFormatter alloc] init];
+                  f.numberStyle = NSNumberFormatterDecimalStyle;
+                  f.usesSignificantDigits = YES;
+                  f.maximumSignificantDigits = 10;
+                  return [f stringFromNumber:@(v)];
+              }
+              NSInteger e = (NSInteger)floor(log10(a));
+              double m = v / pow(10, (double)e);
+              if (fabs(m) >= 9.9999995) { m /= 10; e += 1; }
+              NSNumberFormatter *f = [[NSNumberFormatter alloc] init];
+              f.numberStyle = NSNumberFormatterDecimalStyle;
+              f.usesSignificantDigits = YES;
+              f.maximumSignificantDigits = 7;
+              return [NSString stringWithFormat:@"%@×10%@", [f stringFromNumber:@(m)], [self superscript:e]];
+          }
+
+          // 복사용/입력용 숫자 (쉼표 없음)
+          - (NSString *)plain:(double)v {
+              NSNumberFormatter *f = [[NSNumberFormatter alloc] init];
+              f.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
+              f.usesSignificantDigits = YES;
+              f.maximumSignificantDigits = 12;
+              double a = fabs(v);
+              if (v != 0 && (a < 1e-6 || a >= 1e15)) f.numberStyle = NSNumberFormatterScientificStyle;
+              else { f.numberStyle = NSNumberFormatterDecimalStyle; f.usesGroupingSeparator = NO; }
+              return [f stringFromNumber:@(v)] ?: @"0";
+          }
+
+          // 입력 중인 글자를 1,234.5 처럼
+          - (NSString *)prettyInput:(NSString *)s {
+              if (!s.length) return @"0";
+              NSRange dot = [s rangeOfString:@"."];
+              NSString *intPart = dot.location == NSNotFound ? s : [s substringToIndex:dot.location];
+              NSString *rest = dot.location == NSNotFound ? @"" : [s substringFromIndex:dot.location];
+              NSNumberFormatter *f = [[NSNumberFormatter alloc] init];
+              f.numberStyle = NSNumberFormatterDecimalStyle;
+              f.maximumFractionDigits = 0;
+              return [[f stringFromNumber:@(intPart.length ? intPart.longLongValue : 0)] stringByAppendingString:rest];
+          }
+
+          #pragma mark - 계산
+
+          - (BOOL)hasInput { return self.input.length > 0 && ![self.input isEqualToString:@"."]; }
+
+          // 지금 값이 있는지 (입력했거나, 단위를 바꾸며 이어받은 값)
+          - (BOOL)hasValue { return (self.fresh && self.hasHeld) || [self hasInput]; }
+
+          // 현재 값을 Å 로
+          - (double)angstrom {
+              if (self.fresh && self.hasHeld) return self.heldA;
+              return self.input.doubleValue * self.unitFactors[(NSUInteger)self.active].doubleValue;
+          }
+
+          - (double)valueForUnit:(NSUInteger)i {
+              return [self angstrom] / self.unitFactors[i].doubleValue;
+          }
+
+          - (void)refresh {
+              BOOL has = [self hasValue];
+              UIColor *dim = [UIColor colorWithWhite:0.35 alpha:1.0];
+              for (NSUInteger i = 0; i < self.rows.count; i++) {
+                  UIView *row = self.rows[i];
+                  UILabel *val = self.valueLabels[i];
+                  BOOL isActive = ((NSInteger)i == self.active);
+                  row.layer.borderColor = isActive ? UC_ORANGE.CGColor : UIColor.clearColor.CGColor;
+                  if (isActive && !(self.fresh && self.hasHeld)) {
+                      val.text = [self prettyInput:self.input];
+                      val.textColor = self.input.length ? UIColor.whiteColor : dim;
+                  } else if (isActive) {
+                      val.text = [self pretty:[self valueForUnit:i]];
+                      val.textColor = UIColor.whiteColor;
+                  } else {
+                      val.text = has ? [self pretty:[self valueForUnit:i]] : @"0";
+                      val.textColor = has ? UC_ORANGE : dim;
+                  }
+              }
+          }
+
+          #pragma mark - 입력
+
+          - (void)tick { [self.haptic impactOccurred]; }
+
+          // 다른 단위를 누르면 그 단위가 입력 칸이 됨 (값은 그대로 이어받음)
+          - (void)rowTapped:(UITapGestureRecognizer *)g {
+              [self tick];
+              NSInteger idx = g.view.tag;
+              if (idx == self.active) return;
+              BOOL had = [self hasValue];
+              double a = had ? [self angstrom] : 0;
+              self.hasHeld = had;
+              self.heldA = a;
+              [self.input setString:@""];
+              self.active = idx;
+              self.fresh = YES; // 숫자를 누르면 새로 입력
+              [self refresh];
+          }
+
+          - (void)rowLongPressed:(UILongPressGestureRecognizer *)g {
+              if (g.state != UIGestureRecognizerStateBegan) return;
+              [self copyUnit:(NSUInteger)g.view.tag];
+          }
+
+          - (void)digitTapped:(UIButton *)sender {
+              [self tick];
+              NSString *d = [sender titleForState:UIControlStateNormal];
+              if (self.fresh) { [self.input setString:@""]; self.fresh = NO; self.hasHeld = NO; }
+              NSMutableString *t = self.input;
+              if (t.length >= kMaxLength) return;
+              if ([d isEqualToString:@"."]) {
+                  if ([t containsString:@"."]) return;
+                  if (!t.length) [t appendString:@"0"];
+              } else if ([t isEqualToString:@"0"]) {
+                  [t setString:@""];
+              }
+              [t appendString:d];
+              [self refresh];
+          }
+
+          - (void)backTapped {
+              [self tick];
+              if (self.fresh) {
+                  // 이어받은 값을 고쳐 쓸 수 있게 글자로 바꿈
+                  if (self.hasHeld) {
+                      NSString *s = [self plain:[self valueForUnit:(NSUInteger)self.active]];
+                      [self.input setString:([s rangeOfString:@"E"].location == NSNotFound ? s : @"")];
+                  }
+                  self.fresh = NO;
+                  self.hasHeld = NO;
+              }
+              if (self.input.length) [self.input deleteCharactersInRange:NSMakeRange(self.input.length - 1, 1)];
+              [self refresh];
+          }
+
+          - (void)clearTapped {
+              [[[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium] impactOccurred];
+              [self.input setString:@""];
+              self.fresh = NO;
+              self.hasHeld = NO;
+              self.active = 0; // 기준 Å 로 돌아감
+              [self refresh];
+          }
+
+          - (void)copyTapped {
+              [self copyUnit:(NSUInteger)self.active];
+          }
+
+          - (void)copyUnit:(NSUInteger)i {
+              [[[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium] impactOccurred];
+              if (![self hasValue]) { [self showToast:@"복사할 값이 없어요"]; return; }
+              NSString *text = [self plain:[self valueForUnit:i]];
+              UIPasteboard.generalPasteboard.string = text;
+              [self showToast:[NSString stringWithFormat:@"복사됨: %@ %@", text, self.unitNames[i]]];
+          }
+
+          - (void)showToast:(NSString *)text {
+              self.toast.text = [NSString stringWithFormat:@"   %@   ", text];
+              [UIView animateWithDuration:0.15 animations:^{ self.toast.alpha = 1; } completion:^(BOOL f) {
+                  [UIView animateWithDuration:0.3 delay:1.2 options:0 animations:^{ self.toast.alpha = 0; } completion:nil];
+              }];
+          }
+
+          @end
+          __EOF__
+          cat > 'app/control' <<'__EOF__'
+          Package: com.local.unitconv
+          Name: UnitConv
+          Version: 1.0.0
+          Architecture: iphoneos-arm
+          Description: Simple length unit converter
+          Maintainer: local
+          Author: local
+          Section: Utilities
+          Depends: firmware (>= 14.0)
+          __EOF__
+          cat > 'app/main.m' <<'__EOF__'
+          #import <UIKit/UIKit.h>
+          #import "AppDelegate.h"
+
+          int main(int argc, char *argv[]) {
+              @autoreleasepool {
+                  return UIApplicationMain(argc, argv, nil, NSStringFromClass([AppDelegate class]));
+              }
+          }
+          __EOF__
+          find app -type f
+
+      - name: Install Theos
+        run: |
+          brew install ldid make
+          git clone --recursive --depth 1 https://github.com/theos/theos.git "$HOME/theos"
+          echo "THEOS=$HOME/theos" >> "$GITHUB_ENV"
+          echo "$(brew --prefix make)/libexec/gnubin" >> "$GITHUB_PATH"
+
+      - name: Build IPA
+        working-directory: app
+        run: |
+          make clean
+          make stage FINALPACKAGE=1
+          APP=UnitConv
+          OUT="$GITHUB_WORKSPACE/out"
+          mkdir -p "$OUT/Payload"
+          cp -R ".theos/_/Applications/$APP.app" "$OUT/Payload/"
+          if command -v ldid >/dev/null; then ldid -S "$OUT/Payload/$APP.app/$APP"; fi
+          cd "$OUT" && zip -qry "$APP.ipa" Payload
+          ls -la "$OUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: UnitConv-ipa
+          path: out/*.ipa
