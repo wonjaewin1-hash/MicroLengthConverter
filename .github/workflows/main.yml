@@ -290,7 +290,10 @@ jobs:
 
           @interface UnitViewController ()
           @property (nonatomic, strong) NSArray<NSString *> *unitNames;   // 화면에 보이는 이름
-          @property (nonatomic, strong) NSArray<NSNumber *> *unitFactors; // 1 단위 = 몇 Å
+          @property (nonatomic, strong) NSArray<NSNumber *> *unitFactors; // 1 단위 = 기준 단위 몇 개 (길이: Å, 넓이: m²)
+          @property (nonatomic, assign) NSInteger mode;                   // 0 = 길이, 1 = 넓이
+          @property (nonatomic, strong) UISegmentedControl *modeControl;
+          @property (nonatomic, strong) NSArray<UILabel *> *unitLabels;
           @property (nonatomic, assign) NSInteger active;                 // 입력 중인 단위
           @property (nonatomic, strong) NSMutableString *input;           // 입력 중인 숫자
           @property (nonatomic, assign) BOOL fresh;                       // 단위를 바꾼 직후 (다음 숫자가 새로 입력)
@@ -311,11 +314,21 @@ jobs:
               self.view.backgroundColor = UIColor.blackColor;
               self.haptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
 
-              // 기준은 Å. 자주 쓰는 순서대로 배열
-              self.unitNames   = @[@"Å",  @"μm", @"nm", @"pm",  @"mm", @"cm", @"inch",   @"m"];
-              self.unitFactors = @[@1.0,  @1e4,  @10.0, @0.01,  @1e7,  @1e8,  @2.54e8,   @1e10];
-              self.active = 0;
               self.input = [NSMutableString string];
+
+              // 길이 / 넓이 전환
+              self.modeControl = [[UISegmentedControl alloc] initWithItems:@[@"길이", @"넓이"]];
+              self.modeControl.translatesAutoresizingMaskIntoConstraints = NO;
+              self.modeControl.selectedSegmentTintColor = UC_ORANGE;
+              self.modeControl.backgroundColor = UC_BOX;
+              [self.modeControl setTitleTextAttributes:@{NSForegroundColorAttributeName: UC_LIGHT,
+                                                         NSFontAttributeName: [UIFont systemFontOfSize:16 weight:UIFontWeightSemibold]}
+                                              forState:UIControlStateNormal];
+              [self.modeControl setTitleTextAttributes:@{NSForegroundColorAttributeName: UIColor.whiteColor,
+                                                         NSFontAttributeName: [UIFont systemFontOfSize:16 weight:UIFontWeightBold]}
+                                              forState:UIControlStateSelected];
+              [self.modeControl addTarget:self action:@selector(modeChanged) forControlEvents:UIControlEventValueChanged];
+              [self.view addSubview:self.modeControl];
 
               UIView *display = [self buildDisplay];
               UIView *keypad = [self buildKeypad];
@@ -342,7 +355,11 @@ jobs:
 
                   [display.leadingAnchor constraintEqualToAnchor:safe.leadingAnchor constant:16],
                   [display.trailingAnchor constraintEqualToAnchor:safe.trailingAnchor constant:-16],
-                  [display.topAnchor constraintEqualToAnchor:safe.topAnchor constant:8],
+                  [self.modeControl.topAnchor constraintEqualToAnchor:safe.topAnchor constant:6],
+                  [self.modeControl.leadingAnchor constraintEqualToAnchor:safe.leadingAnchor constant:16],
+                  [self.modeControl.trailingAnchor constraintEqualToAnchor:safe.trailingAnchor constant:-16],
+                  [self.modeControl.heightAnchor constraintEqualToConstant:34],
+                  [display.topAnchor constraintEqualToAnchor:self.modeControl.bottomAnchor constant:10],
                   [display.bottomAnchor constraintEqualToAnchor:keypad.topAnchor constant:-14],
 
                   [self.toast.centerXAnchor constraintEqualToAnchor:self.view.centerXAnchor],
@@ -350,7 +367,36 @@ jobs:
                   [self.toast.heightAnchor constraintEqualToConstant:36],
                   [self.toast.widthAnchor constraintGreaterThanOrEqualToConstant:160],
               ]];
+              [self setMode:[NSUserDefaults.standardUserDefaults integerForKey:@"mode"]];
+          }
+
+          #pragma mark - 모드
+
+          // 길이: 기준 Å, 자주 쓰는 순서 / 넓이: 기준 m²
+          - (void)setMode:(NSInteger)mode {
+              _mode = (mode == 1) ? 1 : 0;
+              if (_mode == 0) {
+                  self.unitNames   = @[@"Å",  @"μm", @"nm", @"pm",  @"mm", @"cm", @"inch",   @"m"];
+                  self.unitFactors = @[@1.0,  @1e4,  @10.0, @0.01,  @1e7,  @1e8,  @2.54e8,   @1e10];
+              } else {
+                  self.unitNames   = @[@"평",          @"m²", @"cm²", @"mm²", @"inch²",     @"ft²"];
+                  self.unitFactors = @[@(400.0/121.0), @1.0,  @1e-4,  @1e-6,  @0.00064516, @0.09290304];
+              }
+              self.modeControl.selectedSegmentIndex = _mode;
+              [NSUserDefaults.standardUserDefaults setInteger:_mode forKey:@"mode"];
+              for (NSUInteger i = 0; i < self.unitLabels.count; i++) {
+                  self.unitLabels[i].text = i < self.unitNames.count ? self.unitNames[i] : @"";
+              }
+              [self.input setString:@""];
+              self.fresh = NO;
+              self.hasHeld = NO;
+              self.active = 0;
               [self refresh];
+          }
+
+          - (void)modeChanged {
+              [self tick];
+              [self setMode:self.modeControl.selectedSegmentIndex];
           }
 
           #pragma mark - 화면 구성
@@ -358,7 +404,8 @@ jobs:
           - (UIView *)buildDisplay {
               NSMutableArray *rows = [NSMutableArray array];
               NSMutableArray *values = [NSMutableArray array];
-              for (NSUInteger i = 0; i < self.unitNames.count; i++) {
+              NSMutableArray *unitLabels = [NSMutableArray array];
+              for (NSUInteger i = 0; i < 8; i++) {
                   UIView *row = [[UIView alloc] init];
                   row.backgroundColor = UC_BOX;
                   row.layer.cornerRadius = 12;
@@ -369,7 +416,7 @@ jobs:
 
                   UILabel *unit = [[UILabel alloc] init];
                   unit.translatesAutoresizingMaskIntoConstraints = NO;
-                  unit.text = self.unitNames[i];
+                  [unitLabels addObject:unit];
                   unit.font = [UIFont systemFontOfSize:19 weight:UIFontWeightSemibold];
                   unit.textColor = UC_LIGHT;
                   [row addSubview:unit];
@@ -385,7 +432,7 @@ jobs:
                   [NSLayoutConstraint activateConstraints:@[
                       [unit.leadingAnchor constraintEqualToAnchor:row.leadingAnchor constant:16],
                       [unit.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
-                      [unit.widthAnchor constraintEqualToConstant:56],
+                      [unit.widthAnchor constraintEqualToConstant:64],
                       [val.leadingAnchor constraintEqualToAnchor:unit.trailingAnchor constant:8],
                       [val.trailingAnchor constraintEqualToAnchor:row.trailingAnchor constant:-16],
                       [val.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
@@ -395,6 +442,7 @@ jobs:
               }
               self.rows = rows;
               self.valueLabels = values;
+              self.unitLabels = unitLabels;
 
               UIStackView *stack = [[UIStackView alloc] initWithArrangedSubviews:rows];
               stack.axis = UILayoutConstraintAxisVertical;
@@ -557,6 +605,8 @@ jobs:
               for (NSUInteger i = 0; i < self.rows.count; i++) {
                   UIView *row = self.rows[i];
                   UILabel *val = self.valueLabels[i];
+                  row.hidden = (i >= self.unitNames.count);
+                  if (row.hidden) continue;
                   BOOL isActive = ((NSInteger)i == self.active);
                   row.layer.borderColor = isActive ? UC_ORANGE.CGColor : UIColor.clearColor.CGColor;
                   if (isActive && !(self.fresh && self.hasHeld)) {
@@ -632,7 +682,7 @@ jobs:
               [self.input setString:@""];
               self.fresh = NO;
               self.hasHeld = NO;
-              self.active = 0; // 기준 Å 로 돌아감
+              self.active = 0; // 기준 단위(Å / 평)로 돌아감
               [self refresh];
           }
 
@@ -664,18 +714,26 @@ jobs:
               }
 
               NSRegularExpression *re = [NSRegularExpression regularExpressionWithPattern:
-                  @"^\\s*[-+]?((?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][-+]?\\d+)?)\\s*([A-Za-zμµÅ\\\"]*)\\s*$" options:0 error:nil];
+                  @"^\\s*[-+]?((?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][-+]?\\d+)?)\\s*([A-Za-z0-9μµÅ²평\\\"]*)\\s*$" options:0 error:nil];
               NSTextCheckingResult *m = [re firstMatchInString:t options:0 range:NSMakeRange(0, t.length)];
               if (!m) { [self showToast:@"숫자를 찾지 못했어요"]; return; }
               double v = [[t substringWithRange:[m rangeAtIndex:1]] doubleValue];
               NSString *unitText = [m rangeAtIndex:2].length ? [t substringWithRange:[m rangeAtIndex:2]] : @"";
 
-              // 단위가 붙어 있으면 그 칸으로 이동
-              NSDictionary *unitMap = @{@"å": @0, @"a": @0, @"ang": @0,
-                                        @"μm": @1, @"µm": @1, @"um": @1,
-                                        @"nm": @2, @"pm": @3, @"mm": @4, @"cm": @5,
-                                        @"inch": @6, @"in": @6, @"\"": @6, @"m": @7};
-              NSNumber *u = unitMap[unitText.lowercaseString] ?: unitMap[unitText];
+              // 단위가 붙어 있으면 그 칸으로 이동 (다른 모드 단위면 모드도 전환)
+              NSDictionary *lengthMap = @{@"å": @0, @"a": @0, @"ang": @0,
+                                          @"μm": @1, @"µm": @1, @"um": @1,
+                                          @"nm": @2, @"pm": @3, @"mm": @4, @"cm": @5,
+                                          @"inch": @6, @"in": @6, @"\"": @6, @"m": @7};
+              NSDictionary *areaMap = @{@"평": @0, @"py": @0, @"pyeong": @0,
+                                        @"m²": @1, @"m2": @1, @"sqm": @1,
+                                        @"cm²": @2, @"cm2": @2, @"mm²": @3, @"mm2": @3,
+                                        @"inch²": @4, @"in²": @4, @"in2": @4, @"inch2": @4, @"sqin": @4,
+                                        @"ft²": @5, @"ft2": @5, @"sqft": @5};
+              NSString *key = unitText.lowercaseString;
+              NSNumber *u = nil;
+              if ((u = areaMap[key] ?: areaMap[unitText])) { if (self.mode != 1) [self setMode:1]; }
+              else if ((u = lengthMap[key] ?: lengthMap[unitText])) { if (self.mode != 0) [self setMode:0]; }
               if (u) self.active = u.integerValue;
 
               NSString *plainText = [self plain:v];
