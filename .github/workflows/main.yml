@@ -446,7 +446,7 @@ jobs:
               digits.spacing = 12;
               digits.distribution = UIStackViewDistributionFillEqually;
 
-              // 오른쪽 열: ⌫ / AC / 복사(2칸)
+              // 오른쪽 열: ⌫ / AC / 복사 / 붙여넣기
               UIButton *back = [self keyWithTitle:nil bg:UC_LIGHT fg:UIColor.blackColor action:@selector(backTapped)];
               [back setImage:[UIImage systemImageNamed:@"delete.left"
                                      withConfiguration:[UIImageSymbolConfiguration configurationWithPointSize:22 weight:UIImageSymbolWeightMedium]]
@@ -454,8 +454,11 @@ jobs:
               UIButton *clear = [self keyWithTitle:@"AC" bg:UC_LIGHT fg:UIColor.blackColor action:@selector(clearTapped)];
               clear.titleLabel.font = [UIFont systemFontOfSize:26 weight:UIFontWeightMedium];
               UIButton *copy = [self keyWithTitle:@"복사" bg:UC_ORANGE fg:UIColor.whiteColor action:@selector(copyTapped)];
-              copy.titleLabel.font = [UIFont systemFontOfSize:22 weight:UIFontWeightSemibold];
-              UIStackView *right = [[UIStackView alloc] initWithArrangedSubviews:@[back, clear, copy]];
+              copy.titleLabel.font = [UIFont systemFontOfSize:20 weight:UIFontWeightSemibold];
+              UIButton *paste = [self keyWithTitle:@"붙여넣기" bg:UC_ORANGE fg:UIColor.whiteColor action:@selector(pasteTapped)];
+              paste.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightSemibold];
+              paste.titleLabel.adjustsFontSizeToFitWidth = YES;
+              UIStackView *right = [[UIStackView alloc] initWithArrangedSubviews:@[back, clear, copy, paste]];
               right.axis = UILayoutConstraintAxisVertical;
               right.spacing = 12;
 
@@ -468,6 +471,7 @@ jobs:
                   [right.widthAnchor constraintEqualToAnchor:seven.widthAnchor],
                   [back.heightAnchor constraintEqualToAnchor:last.heightAnchor],
                   [clear.heightAnchor constraintEqualToAnchor:last.heightAnchor],
+                  [copy.heightAnchor constraintEqualToAnchor:last.heightAnchor],
               ]];
               return pad;
           }
@@ -642,6 +646,52 @@ jobs:
               NSString *text = [self plain:[self valueForUnit:i]];
               UIPasteboard.generalPasteboard.string = text;
               [self showToast:[NSString stringWithFormat:@"복사됨: %@ %@", text, self.unitNames[i]]];
+          }
+
+          // 붙여넣기: "1,234.5", "0.55 μm", "1.5e-6 m", "1.5×10⁻⁶ cm" 같은 글자를 읽음
+          - (void)pasteTapped {
+              [[[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleMedium] impactOccurred];
+              NSString *raw = UIPasteboard.generalPasteboard.string;
+              if (!raw.length) { [self showToast:@"붙여넣을 내용이 없어요"]; return; }
+
+              NSMutableString *t = [[raw stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet] mutableCopy];
+              [t replaceOccurrencesOfString:@"," withString:@"" options:0 range:NSMakeRange(0, t.length)];
+              NSDictionary *sup = @{@"⁰": @"0", @"¹": @"1", @"²": @"2", @"³": @"3", @"⁴": @"4", @"⁵": @"5",
+                                    @"⁶": @"6", @"⁷": @"7", @"⁸": @"8", @"⁹": @"9", @"⁻": @"-"};
+              for (NSString *k in sup) [t replaceOccurrencesOfString:k withString:sup[k] options:0 range:NSMakeRange(0, t.length)];
+              for (NSString *k in @[@"×10^", @"x10^", @"X10^", @"*10^", @"×10"]) {
+                  [t replaceOccurrencesOfString:k withString:@"e" options:0 range:NSMakeRange(0, t.length)];
+              }
+
+              NSRegularExpression *re = [NSRegularExpression regularExpressionWithPattern:
+                  @"^\\s*[-+]?((?:\\d+\\.?\\d*|\\.\\d+)(?:[eE][-+]?\\d+)?)\\s*([A-Za-zμµÅ\\\"]*)\\s*$" options:0 error:nil];
+              NSTextCheckingResult *m = [re firstMatchInString:t options:0 range:NSMakeRange(0, t.length)];
+              if (!m) { [self showToast:@"숫자를 찾지 못했어요"]; return; }
+              double v = [[t substringWithRange:[m rangeAtIndex:1]] doubleValue];
+              NSString *unitText = [m rangeAtIndex:2].length ? [t substringWithRange:[m rangeAtIndex:2]] : @"";
+
+              // 단위가 붙어 있으면 그 칸으로 이동
+              NSDictionary *unitMap = @{@"å": @0, @"a": @0, @"ang": @0,
+                                        @"μm": @1, @"µm": @1, @"um": @1,
+                                        @"nm": @2, @"pm": @3, @"mm": @4, @"cm": @5,
+                                        @"inch": @6, @"in": @6, @"\"": @6, @"m": @7};
+              NSNumber *u = unitMap[unitText.lowercaseString] ?: unitMap[unitText];
+              if (u) self.active = u.integerValue;
+
+              NSString *plainText = [self plain:v];
+              if ([plainText rangeOfString:@"E"].location == NSNotFound && plainText.length <= kMaxLength) {
+                  [self.input setString:plainText];
+                  self.fresh = NO;
+                  self.hasHeld = NO;
+              } else {
+                  // 지수로만 나타낼 수 있는 값은 그대로 이어받기
+                  [self.input setString:@""];
+                  self.heldA = v * self.unitFactors[(NSUInteger)self.active].doubleValue;
+                  self.hasHeld = YES;
+                  self.fresh = YES;
+              }
+              [self refresh];
+              [self showToast:[NSString stringWithFormat:@"붙여넣음: %@ %@", [self pretty:v], self.unitNames[(NSUInteger)self.active]]];
           }
 
           - (void)showToast:(NSString *)text {
